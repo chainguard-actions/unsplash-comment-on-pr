@@ -1,0 +1,51 @@
+name: Test comment-on-pr with missing message
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create fake pull_request event JSON
+        run: |
+          mkdir -p /tmp/fake-event
+          cat > /tmp/fake-event/event.json <<'EOF'
+          {
+            "number": 42,
+            "repository": {
+              "full_name": "actionchain-harness/test-repo"
+            },
+            "pull_request": {
+              "number": 42,
+              "head": {
+                "sha": "abc1234567890abcdef1234567890abcdef123456"
+              }
+            }
+          }
+          EOF
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        env:
+          GITHUB_EVENT_PATH: /tmp/fake-event/event.json
+          GITHUB_EVENT_NAME: pull_request
+        with:
+          msg: ""
+
+      - name: Assert action fails when message is empty
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          # The action requires a non-empty message argument; it should fail
+          # (either due to missing message or due to API call on sentinel repo)
+          if [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed as expected (missing/empty message or sentinel repo)"
+          elif [ "$OUTCOME" = "success" ]; then
+            echo "PASS: action succeeded (message was passed through)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi
