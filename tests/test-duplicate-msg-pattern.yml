@@ -1,4 +1,4 @@
-name: Test basic usage - comment on PR
+name: Test comment on PR with custom duplicate message pattern
 on:
   workflow_dispatch:
 jobs:
@@ -19,7 +19,9 @@ jobs:
         uses: .
         continue-on-error: true
         with:
-          msg: "Hello from the test suite!"
+          msg: "Coverage report: 95%"
+          check_for_duplicate_msg: "true"
+          duplicate_msg_pattern: "Coverage report:.*"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Assert action ran or failed gracefully on sentinel repo
@@ -28,7 +30,7 @@ jobs:
         run: |
           echo "outcome: $OUTCOME"
           if [ "$OUTCOME" = "success" ]; then
-            echo "PASS: action succeeded"
+            echo "PASS: action succeeded with custom duplicate pattern"
           elif [ "$OUTCOME" = "failure" ]; then
             echo "PASS: action failed gracefully (sentinel repo is not resolvable)"
           else
