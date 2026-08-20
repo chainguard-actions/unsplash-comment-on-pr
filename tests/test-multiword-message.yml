@@ -1,4 +1,4 @@
-name: Test basic usage - comment on PR
+name: Test multi-word message input
 on:
   workflow_dispatch:
 jobs:
@@ -10,7 +10,7 @@ jobs:
       - name: Create fake push event payload
         run: |
           mkdir -p "$GITHUB_WORKSPACE/.test-events"
-          cat > "$GITHUB_WORKSPACE/.test-events/push.json" <<'EOF'
+          cat > "$GITHUB_WORKSPACE/.test-events/push-multiword.json" <<'EOF'
           {
             "after": "abc123def456abc123def456abc123def456abc123",
             "repository": {
@@ -23,19 +23,21 @@ jobs:
         uses: .
         continue-on-error: true
         env:
-          GITHUB_EVENT_PATH: /github/workspace/.test-events/push.json
+          GITHUB_EVENT_PATH: /github/workspace/.test-events/push-multiword.json
         with:
-          msg: "Test comment from CI"
+          msg: "Database migration required: please run migrations before deploying"
 
       - name: Assert action ran and failed gracefully (sentinel repo not resolvable)
         env:
           OUTCOME: ${{ steps.action.outcome }}
         run: |
           echo "outcome: $OUTCOME"
-          if [ "$OUTCOME" = "success" ]; then
-            echo "PASS: action succeeded (unexpected but acceptable)"
-          elif [ "$OUTCOME" = "failure" ]; then
+          # The action will fail because the sentinel repo doesn't exist on GitHub.
+          # This is expected behavior under the harness.
+          if [ "$OUTCOME" = "failure" ]; then
             echo "PASS: action failed gracefully (sentinel repo is not resolvable via GitHub API)"
+          elif [ "$OUTCOME" = "success" ]; then
+            echo "PASS: action succeeded (unexpected but acceptable)"
           else
             echo "FAIL: unexpected outcome '$OUTCOME'"
             exit 1

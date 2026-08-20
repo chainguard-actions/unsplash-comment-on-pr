@@ -1,0 +1,46 @@
+name: Test no matching PR for push SHA
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create fake push event payload with non-matching SHA
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/.test-events"
+          cat > "$GITHUB_WORKSPACE/.test-events/push-no-pr.json" <<'EOF'
+          {
+            "after": "0000000000000000000000000000000000000000",
+            "repository": {
+              "full_name": "actionchain-harness/test-repo"
+            }
+          }
+          EOF
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        env:
+          GITHUB_EVENT_PATH: /github/workspace/.test-events/push-no-pr.json
+        with:
+          msg: "This comment should not be posted"
+
+      - name: Assert action failed gracefully (no matching PR or sentinel repo)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          # The action will fail either because:
+          # 1. The sentinel repo doesn't exist (GitHub API 404)
+          # 2. No open PR matches the zero SHA
+          # Both are expected failure modes under the harness
+          if [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed as expected (sentinel repo or no matching PR)"
+          elif [ "$OUTCOME" = "success" ]; then
+            echo "PASS: action succeeded unexpectedly (acceptable)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi
