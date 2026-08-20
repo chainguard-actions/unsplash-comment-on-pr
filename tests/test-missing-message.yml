@@ -1,4 +1,4 @@
-name: Test basic usage - comment on PR
+name: Test missing message validation
 on:
   workflow_dispatch:
 jobs:
@@ -21,18 +21,19 @@ jobs:
         uses: .
         continue-on-error: true
         with:
-          msg: "Hello from the test suite!"
+          msg: ""
           check_for_duplicate_msg: "false"
 
-      - name: Assert action ran (succeeded or failed gracefully on sentinel repo)
+      - name: Assert action failed due to missing message
         env:
           OUTCOME: ${{ steps.action.outcome }}
         run: |
           echo "outcome: $OUTCOME"
-          if [ "$OUTCOME" = "success" ]; then
-            echo "PASS: action succeeded"
-          elif [ "$OUTCOME" = "failure" ]; then
-            echo "PASS: action failed gracefully (sentinel repo has no matching PR)"
+          if [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action correctly failed when msg is empty"
+          elif [ "$OUTCOME" = "success" ]; then
+            echo "FAIL: action should have failed with empty message"
+            exit 1
           else
             echo "FAIL: unexpected outcome '$OUTCOME'"
             exit 1
