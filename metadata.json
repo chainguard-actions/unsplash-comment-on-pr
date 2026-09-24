@@ -1,7 +1,0 @@
-{
-  "owner": "unsplash",
-  "name": "comment-on-pr",
-  "visibility": "public",
-  "description": "Leaves a comment on an open PR matching a push event.",
-  "block_publish": false
-}
